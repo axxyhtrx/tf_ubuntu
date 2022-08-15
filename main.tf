@@ -39,11 +39,17 @@ resource "libvirt_cloudinit_disk" "commoninit" {
   network_config = file("${path.module}/network_config.cfg")
 }
 
+resource "libvirt_volume" "data" {
+  name = "data"
+  size = 20*1024*1024*1024
+  base_volume_id = "${libvirt_volume.ubuntu-qcow2.id}"
+  pool   = libvirt_pool.ubuntu.name
+}
 # Create the machine
 resource "libvirt_domain" "domain-ubuntu" {
   name   = "ubuntu-terraform"
-  memory = "512"
-  vcpu   = 1
+  memory = "10000"
+  vcpu   = 7
 
   cloudinit = libvirt_cloudinit_disk.commoninit.id
 
@@ -51,6 +57,7 @@ resource "libvirt_domain" "domain-ubuntu" {
     network_name = "default"
     wait_for_lease = true
   }
+
 
   # IMPORTANT: this is a known bug on cloud images, since they expect a console
   # we need to pass it
@@ -68,8 +75,9 @@ resource "libvirt_domain" "domain-ubuntu" {
   }
 
   disk {
-    volume_id = libvirt_volume.ubuntu-qcow2.id
+    volume_id = libvirt_volume.data.id
   }
+
 
   graphics {
     type        = "spice"
